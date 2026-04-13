@@ -3,3 +3,4 @@ commit	val_bpb	memory_gb	status	description
 3d35f08	1.857615	0.0	discard	DEPTH 4->6 (26M params): too slow on MPS, only 61 steps
 b72f043	1.485361	0.0	keep	TOTAL_BATCH_SIZE 2^16->2^15: 240 steps vs 125, better convergence
 d1ef347	1.441109	0.0	keep	TOTAL_BATCH_SIZE 2^15->2^14, DEVICE_BATCH_SIZE 16->8: 461 steps
+3693266	1.428001	0.0	keep	TOTAL_BATCH_SIZE 2^13, DEVICE_BATCH_SIZE 4: 925 steps, diminishing returns
