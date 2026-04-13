@@ -1,14 +1,32 @@
 # autoresearch-macos
 
-![teaser](progress.png)
+This is my small attempt at running [karpathy's autoresearch](https://github.com/karpathy/autoresearch) on an Apple Silicon Mac — letting a Claude agent experiment autonomously on a tiny LLM training setup and see what it finds. Each experiment trains for exactly 5 minutes, the agent checks if the result improved, keeps or discards the change, and moves on. No human in the loop.
 
-*One day, frontier AI research used to be done by meat computers in between eating, sleeping, having other fun, and synchronizing once in a while using sound wave interconnect in the ritual of "group meeting". That era is long gone. Research is now entirely the domain of autonomous swarms of AI agents running across compute cluster megastructures in the skies. The agents claim that we are now in the 10,205th generation of the code base, in any case no one could tell if that's right or wrong as the "code" is now a self-modifying binary that has grown beyond human comprehension. This repo is the story of how it all began. -@karpathy, March 2026*.
+## My results
+
+![progress](progress.png)
+
+Over 5 experiments the agent found one thing that consistently helped: **smaller batch sizes**. By reducing `TOTAL_BATCH_SIZE` from 2^16 down to 2^13, the model got roughly 8x more optimizer steps in the same 5-minute window. More steps = more learning signal = better val_bpb. The one attempt that went the other direction — increasing model depth to 26M params — made each step too slow on MPS and actually hurt.
+
+| Commit | val_bpb | Status | Description |
+|--------|---------|--------|-------------|
+| 92485f1 | 1.5863 | keep | baseline |
+| 3d35f08 | 1.8576 | discard | DEPTH 4→6 (26M params): too slow on MPS, only 61 steps |
+| b72f043 | 1.4854 | keep | TOTAL_BATCH_SIZE 2^16→2^15: 240 steps vs 125, better convergence |
+| d1ef347 | 1.4411 | keep | TOTAL_BATCH_SIZE 2^15→2^14, DEVICE_BATCH_SIZE 16→8: 461 steps |
+| 3693266 | **1.4280** | keep | TOTAL_BATCH_SIZE 2^13, DEVICE_BATCH_SIZE 4: 925 steps, diminishing returns |
+
+**Best val_bpb: 1.4280** — a 10% improvement from the 1.5863 baseline in just 4 kept experiments. The metric is validation bits-per-byte, lower is better.
+
+---
+
+*One day, frontier AI research used to be done by meat computers in between eating, sleeping, having other fun, and synchronizing once in a while using sound wave interconnect in the ritual of "group meeting". That era is long gone. Research is now entirely the domain of autonomous swarms of AI agents running across compute cluster megastructures in the skies. The agents claim that we are now in the 10,205th generation of the code base, in any case no one could tell if that's right or wrong as the "code" is now a self-modifying binary that has grown beyond human comprehension. This repo is the story of how it all began. -@karpathy, March 2026*
 
 The idea: give an AI agent a small but real LLM training setup and let it experiment autonomously overnight. It modifies the code, trains for 5 minutes, checks if the result improved, keeps or discards, and repeats. You wake up in the morning to a log of experiments and (hopefully) a better model. The training code here is a simplified single-GPU implementation of [nanochat](https://github.com/karpathy/nanochat). The core idea is that you're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `program.md` Markdown files that provide context to the AI agents and set up your autonomous research org. The default `program.md` in this repo is intentionally kept as a bare bones baseline, though it's obvious how one would iterate on it over time to find the "research org code" that achieves the fastest research progress, how you'd add more agents to the mix, etc. A bit more context on this project is here in this [tweet](https://x.com/karpathy/status/2029701092347630069).
 
 ## Open source project worth to look at
 
-Open source collabaration platform for agentic swarms in organizations and communityies. 
+Open source collabaration platform for agentic swarms in organizations and communityies.
 
 [SentientWave Automata](https://github.com/sentientwave/automata)
 
@@ -27,7 +45,6 @@ By design, training runs for a **fixed 5-minute time budget** (wall clock, exclu
 **Requirements:** Apple Silicon Mac (M1/M2/M3/M4 with Metal/MPS support) or a single NVIDIA GPU, Python 3.10+, [uv](https://docs.astral.sh/uv/).
 
 ```bash
-
 # 1. Install uv project manager (if you don't already have it)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
