@@ -1,1 +1,3 @@
 commit	val_bpb	memory_gb	status	description
+92485f1	1.586311	0.0	keep	baseline
+3d35f08	1.857615	0.0	discard	DEPTH 4->6 (26M params): too slow on MPS, only 61 steps
